@@ -1,0 +1,143 @@
+﻿ @page "/add-book"
+ @inject BookTrackingMaui.Services.IBookService bookService
+ @inject NavigationManager navManager
+
+<h3 class="mb-5">Add Champagne</h3>
+
+<EditForm Model="editModel" OnValidSubmit="Submit">
+    <DataAnnotationsValidator />
+
+    <div class="row mb-3">
+        <label for="title" class="col-sm-2 col-form-label">Title</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.Title" type="text" class="form-control" id="title" autofocus>
+            <ValidationMessage For="@(()=> editModel.Title)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="description" class="col-sm-2 col-form-label">Description</label>
+        <div class="col-sm-10">
+            <textarea @bind="editModel.Description" class="form-control" id="description"></textarea>
+            <ValidationMessage For="@(()=> editModel.Description)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="publishingDate" class="col-sm-2 col-form-label">Publishing Date</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.PublishingDate" type="date" class="form-control" id="publishingDate">
+            <ValidationMessage For="@(()=> editModel.PublishingDate)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="isFavorite" class="col-sm-2 col-form-label">Is Favorite</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.IsFavorite" type="checkbox" class="form-control" id="isFavorite" autofocus>
+            <ValidationMessage For="@(()=> editModel.IsFavorite)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="isRead" class="col-sm-2 col-form-label">Is Read</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.IsRead" type="checkbox" class="form-control" id="isRead" autofocus>
+            <ValidationMessage For="@(()=> editModel.IsRead)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="isTBR" class="col-sm-2 col-form-label">Is TBR</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.IsTBR" type="checkbox" class="form-control" id="isTBR" autofocus>
+            <ValidationMessage For="@(()=> editModel.IsTBR)" />
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <label for="serieId" class="col-sm-2 col-form-label">Serie Id</label>
+        <div class="col-sm-10">
+            <input @bind-value="editModel.SerieId" type="number" class="form-control" id="serieId" autofocus>
+            <ValidationMessage For="@(()=> editModel.SerieId)" />
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary margin-top-right">ADD</button>
+    <button type="reset" class="btn btn-danger margin-top-right">RESET</button>
+    <NavLink href="/champagne">
+        <button class="btn btn-secondary margin-top-right">CANCEL</button>
+    </NavLink>
+</EditForm>
+
+@code {
+    #region Parameters
+    [Parameter]
+    public int BookId { get; set; }
+    #endregion
+
+    #region Properties
+    BookTrackingMaui.DTOs.Book.AddBookRequestModel editModel = new();
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        if (BookId > 0)
+        {
+            var existingBookDetails = await bookService.GetBookById(BookId);
+
+            if (existingBookDetails?.Id > 0)
+            {
+                editModel.Title = existingBookDetails.Title;
+                editModel.Description = existingBookDetails.Description;
+                editModel.PublishingDate = existingBookDetails.PublishingDate;
+                editModel.IsFavorite = existingBookDetails.IsFavorite;
+                editModel.IsRead = existingBookDetails.IsRead;
+                editModel.IsTBR = existingBookDetails.IsTBR;
+                editModel.SerieId = existingBookDetails.SerieId;
+            }
+        }
+    }
+    #endregion
+
+    #region Methods
+    private async void Submit()
+    {
+        var addBookRequest = new BookTrackingMaui.DTOs.Book.AddBookRequestModel
+        {
+            Title = editModel.Title,
+            Description = editModel.Description,
+            PublishingDate = editModel.PublishingDate,
+            IsFavorite = editModel.IsFavorite,
+            IsRead = editModel.IsRead,
+            IsTBR = editModel.IsTBR,
+            SerieId = editModel.SerieId,
+        };
+
+        if (BookId > 0)
+        {
+            navManager.NavigateTo("all-champagnes");
+        }
+        else
+        {
+            var response = await bookService.AddBook(addBookRequest);
+
+            if (response.IsSuccess)
+            {
+                editModel.Title = editModel.Description = string.Empty;
+                editModel.SerieId = 0;
+                this.StateHasChanged();
+                await App.Current.MainPage.DisplayAlert("Success", response.Message, "OK");
+                navManager.NavigateTo("all-books");
+            }
+            else
+            {
+                await App.Current.MainPage.DisplayAlert("Ooops", response.Message, "OK");
+            }
+        }
+    }
+    #endregion
+
+
+}

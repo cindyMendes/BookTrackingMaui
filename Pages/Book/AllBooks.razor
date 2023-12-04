@@ -1,0 +1,87 @@
+﻿@page "/all-books"
+@using BookTrackingMaui.DTOs.Book;
+@inject BookTrackingMaui.Services.IBookService bookService
+@inject NavigationManager navManager;
+
+<h3 class="text-center mb-5">List of Books</h3>
+
+@if(bookList == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Publishing Date</th>
+                    <th scope="col">Is Favorite</th>
+                    <th scope="col">Is Read</th>
+                    <th scope="col">Is TBR</th>
+                    <th scope="col">Serie Id</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var (c, i) in bookList.Select((champagne, index) => (champagne, index)))
+                {
+                    var row = i + 1;
+                    <tr class="custom-cursor tr-hover-color" @onclick="@(() => DisplayOptions(c))">
+                        <th scope="row">@row</th>
+                        <td>@c.Title</td>
+                        <td>@c.Description</td>
+                        <td>@c.PublishingDate</td>
+                        <td>@c.IsFavorite</td>
+                        <td>@c.IsRead</td>
+                        <td>@c.IsTBR</td>
+                        <td>@c.SerieId</td>
+                    </tr>                 
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    #region Properties
+    private List<BookResponseModel> bookList;
+    #endregion 
+
+    #region LifeCycle
+    protected override async Task OnInitializedAsync()
+    {
+        bookList = await bookService.GetAllBooks();
+    }
+    #endregion
+
+    #region Methods
+    private async void DisplayOptions(BookResponseModel book)
+    {
+        var response = await App.Current.MainPage.DisplayActionSheet("Select Option", "OK", null, "Update", "Delete");
+
+        if (response == "Update")
+        {
+            navManager.NavigateTo($"update-book/{book.Id}");
+        }
+        else if (response == "Delete")
+        {
+            var deleteResponse = await bookService.DeleteBook(book.Id);
+
+            if (deleteResponse.IsSuccess)
+            {
+                await App.Current.MainPage.DisplayAlert("Success", deleteResponse.Message, "OK");
+                await OnInitializedAsync();
+                this.StateHasChanged();
+            }
+            else
+            {
+                await App.Current.MainPage.DisplayAlert("Ooops", deleteResponse.Message, "OK");
+            }
+        }
+    }
+    #endregion
+
+}
